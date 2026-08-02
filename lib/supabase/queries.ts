@@ -10,10 +10,7 @@ import type {
   SignalType,
 } from "@/types";
 
-// ============================================================
-// Row <-> domain type mapping (DB columns are snake_case, domain
-// types are camelCase -- see types/index.ts for the full rationale).
-// ============================================================
+// Row ↔ domain mapping (snake_case ↔ camelCase)
 
 interface ClientRow {
   id: string;
@@ -38,12 +35,7 @@ function mapClientRow(row: ClientRow): ClientProfile {
   return {
     id: row.id,
     email: row.email,
-    // Cast-through-null, same trick used for age/heightCm/etc. below: the
-    // domain type says `name: string` (always present once intake is done),
-    // but while intake is still in progress the DB value can genuinely be
-    // unset. Defaulting to "" here previously broke intake.ts's isMissing()
-    // check (empty string is neither undefined nor null), so a client's
-    // name was silently never asked for.
+    // null-cast: intake may leave name unset; "" would fake a filled field
     name: row.name ?? (null as unknown as string),
     sexAtBirth: (row.sex_at_birth ?? null) as ClientProfile["sexAtBirth"],
     age: row.age ?? (null as unknown as number),
@@ -168,9 +160,7 @@ function mapPlanRow(row: PlanRow): Plan {
   };
 }
 
-// ============================================================
 // Clients
-// ============================================================
 
 export async function getClientByEmail(email: string): Promise<ClientProfile | null> {
   const supabase = getSupabaseClient();
@@ -188,12 +178,7 @@ export async function getClientById(clientId: string): Promise<ClientProfile | n
   return data ? mapClientRow(data as ClientRow) : null;
 }
 
-/**
- * Upserts on email. Only the fields present in `draft` are written, so
- * calling this repeatedly across a multi-turn intake conversation
- * progressively fills in the row without clobbering previously-saved
- * fields (see the migration note on nullable columns).
- */
+/** Upsert by email; only writes fields present in `draft`. */
 export async function upsertClientProfile(
   email: string,
   draft: ClientProfileDraft & { onboardingStatus?: ClientProfile["onboardingStatus"] }
@@ -211,9 +196,7 @@ export async function upsertClientProfile(
   return mapClientRow(data as ClientRow);
 }
 
-// ============================================================
 // Checkins
-// ============================================================
 
 export async function getRecentCheckins(clientId: string, limit = 3): Promise<CheckinRecord[]> {
   const supabase = getSupabaseClient();
@@ -255,9 +238,7 @@ export async function insertCheckin(
   return mapCheckinRow(data as CheckinRow);
 }
 
-// ============================================================
 // Exercise library
-// ============================================================
 
 export async function getAllExercises(): Promise<ExerciseLibraryItem[]> {
   const supabase = getSupabaseClient();
@@ -267,9 +248,7 @@ export async function getAllExercises(): Promise<ExerciseLibraryItem[]> {
   return (data as ExerciseRow[]).map(mapExerciseRow);
 }
 
-// ============================================================
-// Plans (versioned/append-only)
-// ============================================================
+// Plans (append-only versions)
 
 export async function getLatestPlan(clientId: string): Promise<Plan | null> {
   const supabase = getSupabaseClient();
@@ -285,14 +264,7 @@ export async function getLatestPlan(clientId: string): Promise<Plan | null> {
   return data ? mapPlanRow(data as PlanRow) : null;
 }
 
-/**
- * Marks the client's current 'active' plan as 'superseded', then inserts
- * the new plan as version = previous + 1 and status = 'active'. Not
- * wrapped in a DB transaction (Supabase JS has no multi-statement
- * transaction API) -- acceptable here because plans are additive history,
- * not a source of truth that breaks if briefly inconsistent; a production
- * version would move this into a Postgres function called via rpc().
- */
+/** Supersede active plan and insert next version. */
 export async function insertPlanVersion(input: {
   clientId: string;
   workoutPlan: Plan["workoutPlan"];

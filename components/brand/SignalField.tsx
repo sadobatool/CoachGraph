@@ -2,9 +2,7 @@ import { cn } from "@/lib/utils";
 
 interface SignalFieldProps {
   className?: string;
-  /** Prefix SVG paint ids so multiple instances on one page don't clash. */
-  idPrefix?: string;
-  /** Soften edge fades — useful when clipped into a side panel. */
+  idPrefix?: string; // unique SVG paint ids per instance
   edgeFade?: boolean;
 }
 

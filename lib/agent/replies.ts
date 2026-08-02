@@ -1,7 +1,7 @@
 import type { CheckinRecord, NutritionTargets, Plan, SignalType } from "@/types";
 import { formatPlanSummary } from "./planSummary";
 
-/** Join non-empty sections with a blank line for readable chat bubbles. */
+/** Join non-empty sections with a blank line. */
 export function joinSections(...parts: Array<string | null | undefined>): string {
   return parts.filter((p): p is string => Boolean(p && p.trim())).join("\n\n");
 }
@@ -11,7 +11,7 @@ function formatWeightKg(kg: number): string {
   return Number.isInteger(rounded) ? `${rounded}` : rounded.toFixed(1);
 }
 
-/** Conversational "why we updated your plan" opener for check-in adjustments. */
+/** Check-in adjustment opener. */
 export function formatAdjustmentWhy(
   signals: SignalType[],
   checkin?: CheckinRecord | null,
@@ -187,7 +187,7 @@ export function formatWelcomeBack(name: string | null, planSummary: string | nul
 
 export function formatNewUserGreeting(): string {
   return joinSections(
-    "Hi! I'm your adaptcoach.",
+    "Hi! I'm your CoachGraph coach.",
     "I'll build a simple starter plan for you. Tell me about:",
     [
       "- Your goal (fat loss, muscle gain, etc.)",

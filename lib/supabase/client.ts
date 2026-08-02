@@ -2,12 +2,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 let cachedClient: SupabaseClient | null = null;
 
-/**
- * Server-only Supabase client using the service-role key (bypasses RLS).
- * There is no client-side auth in this project (see README "Scoped out"
- * section) -- every read/write goes through this client from agent tools
- * or API routes, never from the browser.
- */
+/** Server-only Supabase client (service role). */
 export function getSupabaseClient(): SupabaseClient {
   if (cachedClient) return cachedClient;
 

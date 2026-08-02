@@ -5,18 +5,7 @@ import { plansHaveSameContent } from "../planSummary";
 import { formatPlanReadyReply, formatPlanUnchangedReply } from "../replies";
 import type { NutritionTargets, WorkoutPlanDraft } from "@/types";
 
-/**
- * Assembles and persists the final plan. Handles the partial-adjustment
- * case explicitly: a check-in adjustment might only have run ONE
- * specialist (e.g. missed_sessions only touches training), so whichever
- * half didn't get recalculated this turn is carried over from the
- * client's current active plan rather than left null.
- *
- * Carried-over halves intentionally drop the previous specialist's
- * rationale text -- otherwise a plateau-only re-run would keep showing
- * last week's "fix your workout frequency" note even though training
- * didn't run this turn.
- */
+/** Persist plan; carry over untouched half on partial adjustments. */
 export async function mergePlanNode(state: AgentStateType): Promise<AgentStateUpdate> {
   if (!state.clientId) {
     return { taskPlan: withStepStatus(state.taskPlan, "save-plan", "skipped") };

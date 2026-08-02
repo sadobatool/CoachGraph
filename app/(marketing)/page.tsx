@@ -30,7 +30,7 @@ export default function Home() {
         <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col gap-8">
           <div className="max-w-2xl animate-fade-up">
             <p className="font-display text-5xl font-semibold tracking-tight text-foreground sm:text-7xl md:text-8xl">
-              adapt<span className="text-primary">coach</span>
+              Coach<span className="text-primary">Graph</span>
             </p>
             <h1 className="mt-5 max-w-xl font-display text-2xl font-medium leading-snug tracking-tight text-foreground/90 sm:text-3xl">
               Your plan, adapted by real progress.

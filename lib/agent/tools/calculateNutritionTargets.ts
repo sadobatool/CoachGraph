@@ -10,7 +10,6 @@ const ACTIVITY_MULTIPLIERS: Record<ActivityLevel, number> = {
   very_active: 1.9,
 };
 
-// Calorie adjustment from TDEE for each goal, before any signal-driven tweak.
 const GOAL_CALORIE_ADJUSTMENT: Record<PrimaryGoal, number> = {
   fat_loss: -0.2,
   muscle_gain: 0.1,
@@ -25,8 +24,6 @@ const PROTEIN_G_PER_KG: Record<PrimaryGoal, number> = {
   general_fitness: 1.6,
 };
 
-// Guardrail: never recommend below a safe calorie floor, regardless of how
-// aggressive a deficit the math would otherwise produce.
 const SAFETY_FLOOR_CALORIES: Record<SexAtBirth, number> = {
   male: 1500,
   female: 1200,
@@ -39,18 +36,10 @@ export interface CalculateNutritionTargetsParams {
   weightKg: number;
   activityLevel: ActivityLevel;
   primaryGoal: PrimaryGoal;
-  /** Extra adjustment on top of the goal default, e.g. -0.10 for an additional
-   * 10% cut when log_checkin detects a fat-loss plateau. Decided by the
-   * nutritionAgent LLM's reasoning about the check-in context; the actual
-   * arithmetic here stays 100% deterministic either way. */
-  calorieAdjustmentPct?: number | null;
+  calorieAdjustmentPct?: number | null; // e.g. -0.10 on plateau
 }
 
-/**
- * Deterministic TDEE + macro calculator (Mifflin-St Jeor equation).
- * No LLM involved -- this is plain arithmetic, called directly by the
- * nutrition sub-agent's tool-calling loop.
- */
+/** Mifflin-St Jeor TDEE + macros (no LLM). */
 export function calculateNutritionTargets(params: CalculateNutritionTargetsParams): NutritionTargets {
   const { sexAtBirth, age, heightCm, weightKg, activityLevel, primaryGoal, calorieAdjustmentPct } = params;
   const adjustmentPct = calorieAdjustmentPct ?? 0;
@@ -91,7 +80,7 @@ export function calculateNutritionTargets(params: CalculateNutritionTargetsParam
   };
 }
 
-/** Bindable LangChain tool wrapper -- what the nutritionAgent LLM actually calls. */
+/** LangChain tool wrapper for calculateNutritionTargets. */
 export const calculateNutritionTargetsTool = tool(
   async (input) => JSON.stringify(calculateNutritionTargets(input)),
   {

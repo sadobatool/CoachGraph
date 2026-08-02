@@ -9,15 +9,7 @@ import { getLatestPlan } from "@/lib/supabase/queries";
 import { formatCheckinMissingReply, joinSections } from "../replies";
 import type { CheckinInput } from "@/types";
 
-// weightKg/sessionsCompleted/sessionsPlanned are nullable -- and must stay
-// that way. They feed directly into detectPlateau/detectMissedSessions
-// (lib/agent/tools/logCheckin.ts), which is the deterministic signal-firing
-// logic the whole harness is built around. If the model were forced to
-// invent a number for a check-in message that didn't actually state one
-// (e.g. a stray "hey" while a client happens to be in checkin flow), we'd
-// silently log fabricated data and could fire a false plateau/adherence
-// signal off of it. sorenessLevel/energyLevel/notes aren't consumed by any
-// detector, so defaulting soreness when unstated is low-stakes and fine.
+// Signal fields stay nullable — inventing numbers would false-fire detectors
 const CheckinExtractionSchema = z.object({
   weightKg: z.number().min(30).max(300).nullable(),
   sessionsCompleted: z.number().int().min(0).nullable(),
@@ -49,7 +41,6 @@ const DEFAULT_SORENESS = 3;
 const COMPLETED_ALL_SESSIONS_PATTERN = /\b(did|hit|made|completed|finished|nailed)\s+(all|every)\b/i;
 const NEGATION_OR_PARTIAL_PATTERN = /\b(not|n't|never|missed?|skip(ped)?|only|except|besides|but|however|partially)\b/i;
 
-// "i missed workout", "haven't done anything", "did nothing this week", etc.
 const ZERO_WORKOUTS_PATTERN =
   /\b(missed?\s+(my\s+)?workouts?|haven'?t\s+done\s+anything|have\s+not\s+done\s+anything|did\s+nothing|didn'?t\s+do\s+anything|didn'?t\s+work\s*out|no\s+workouts?|skipped\s+(all|every)|zero\s+workouts?)\b/i;
 
@@ -75,11 +66,7 @@ function isCompletedCheckinOrPlanReply(text: string): boolean {
   );
 }
 
-/**
- * Collect recent user check-in messages so answers can span turns
- * ("i missed workout" then "weight is 62") without forcing one mega-message.
- * Stops once we hit a prior completed check-in / plan reply.
- */
+/** Recent user texts for multi-turn check-ins; stop at prior plan/check-in reply. */
 function recentUserTextsForCheckin(messages: BaseMessage[]): string[] {
   const texts: string[] = [];
 
@@ -116,11 +103,7 @@ function inferSessionsPlannedFromAllWording(
   return COMPLETED_ALL_SESSIONS_PATTERN.test(rawText) ? sessionsCompleted : sessionsPlanned;
 }
 
-/**
- * When the client says how many workouts they did but not how many were
- * planned, use their active plan's days-per-week. That's the number the
- * coach already assigned -- no need to ask again every check-in.
- */
+/** Default sessionsPlanned from active plan days/week when unstated. */
 async function resolveSessionsPlanned(
   clientId: string,
   sessionsPlanned: number | null
@@ -143,12 +126,7 @@ function missingCoreFields(extracted: {
   return missing;
 }
 
-/**
- * gpt-4o-mini here is doing genuine extraction/classification work (free
- * text -> structured fields) -- distinct from log_checkin below, which is
- * plain deterministic code that decides needs_llm_adjustment. The model
- * never sees or influences that decision.
- */
+/** Extract check-in fields; signal gating stays in logCheckin. */
 export async function checkinNode(state: AgentStateType): Promise<AgentStateUpdate> {
   let taskPlan = withStepStatus(state.taskPlan, "load-history", "done");
 

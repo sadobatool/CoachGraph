@@ -15,7 +15,7 @@ const syne = Syne({
 });
 
 export const metadata: Metadata = {
-  title: "adaptcoach",
+  title: "CoachGraph",
   description: "An AI fitness coaching agent that adapts your plan based on real progress signals.",
 };
 

@@ -20,10 +20,6 @@ const REQUIRED_FIELDS = [
   "injuries",
 ] as const;
 
-// Human-friendly phrasing for the deterministic follow-up question. Kept
-// separate from the LLM's job on purpose -- see the comment on
-// buildFollowUpReply below for why "what to ask next" must never be left to
-// the model's own judgment.
 const FIELD_LABELS: Record<(typeof REQUIRED_FIELDS)[number], string> = {
   name: "Your name",
   sexAtBirth: "Sex at birth (male or female) — used for calorie math",
@@ -42,10 +38,7 @@ function buildFollowUpReply(acknowledgment: string, missing: readonly string[]):
   return formatIntakeFollowUp(acknowledgment, labels);
 }
 
-// OpenAI's structured-output mode requires every property to be present in
-// the schema (no .optional()) but allows .nullable() -- null is how the
-// model tells us "not stated", which we filter out before merging so we
-// never clobber a previously-saved field with null.
+// Structured output: nullable = "not stated"; drop nulls before merge
 const ExtractionSchema = z.object({
   extracted: z.object({
     name: z.string().nullable(),
@@ -60,16 +53,7 @@ const ExtractionSchema = z.object({
     injuries: z.array(z.enum(INJURY_OPTIONS)).nullable(),
     dietaryPreferences: z.array(z.string()).nullable(),
   }),
-  // Deliberately NOT "assistantReply" -- the model only writes a short
-  // acknowledgment of what it just learned. Whether intake is complete, and
-  // what to ask for next, is decided and phrased entirely by backend code
-  // in buildFollowUpReply below. See the bug this fixed: gpt-4o-mini would
-  // sometimes decide on its own that it had "everything it needed" and tell
-  // the user their plan was generating, even when a required field (e.g.
-  // sexAtBirth, which it was reluctant to press on) was never actually
-  // asked -- silently stalling the conversation forever with a false
-  // "generating now" message. Completion is now a pure function of
-  // `missingAfter`, never the model's opinion.
+  // Ack only — follow-up phrasing is code-owned via buildFollowUpReply
   acknowledgment: z.string(),
 });
 
@@ -77,13 +61,7 @@ function isMissing(value: unknown): boolean {
   return value === undefined || value === null || value === "";
 }
 
-// Filters out both `null` (the model's explicit "not stated" signal) AND
-// empty string (seen in practice: gpt-4o-mini sometimes returns "" for
-// `name` instead of null when the client never gave one, despite the
-// schema/prompt asking for null). Without this, an empty string gets
-// merged into the profile as if it were a real answer, permanently
-// bypassing isMissing()'s check and the field is never asked for again --
-// this is exactly what caused the app to skip asking for a name entirely.
+// Drop null and "" so empty strings don't mark fields as filled
 function dropNulls<T extends Record<string, unknown>>(obj: T): Partial<T> {
   return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== null && v !== "")) as Partial<T>;
 }
@@ -108,9 +86,6 @@ function buildSystemPrompt(missing: string[]): string {
 }
 
 export async function intakeNode(state: AgentStateType): Promise<AgentStateUpdate> {
-  // Email identity is established by the frontend before chat starts (a
-  // dedicated "enter your email" step, not conversational extraction --
-  // parsing emails out of free text is unnecessary risk for zero benefit).
   if (!state.clientEmail) {
     return {
       taskPlan: withStepStatus(state.taskPlan, "extract-fields", "skipped"),
@@ -132,9 +107,6 @@ export async function intakeNode(state: AgentStateType): Promise<AgentStateUpdat
 
   const extracted = dropNulls(result.extracted) as ClientProfileDraft;
 
-  // Always treat the row saveClientProfile hands back as ground truth --
-  // it has the real id (needed by clientId for everything downstream) even
-  // if this is the very first message for a brand-new client.
   let profile = await saveClientProfile(state.clientEmail, extracted);
 
   const knownAfter: Record<string, unknown> = { ...profile };
@@ -159,9 +131,7 @@ export async function intakeNode(state: AgentStateType): Promise<AgentStateUpdat
     missingProfileFields: missingAfter,
     intakeComplete,
     specialistsNeeded: intakeComplete ? ["nutrition", "training"] : [],
-    // Transient if intakeComplete -- mergePlan overwrites this with the real
-    // "your plan is ready" message before the request ends, so the user
-    // never actually sees this one in that case.
+    // Overwritten by mergePlan when intakeComplete
     assistantReply: intakeComplete
       ? joinSections(result.acknowledgment, "That's everything I need — building your personalized plan now...")
       : buildFollowUpReply(result.acknowledgment, missingAfter),

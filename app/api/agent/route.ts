@@ -1,21 +1,14 @@
 import { runAgent } from "@/lib/agent/graph";
 import type { AgentStreamEvent } from "@/types";
 
-// LangGraph + the OpenAI/Supabase SDKs need the Node runtime, not Edge.
-export const runtime = "nodejs";
+export const runtime = "nodejs"; // Node required for LangGraph / SDKs
 
 interface AgentRequestBody {
   clientEmail: string | null;
   messages: Array<{ role: "user" | "assistant"; content: string }>;
 }
 
-/**
- * Thin by design: this route does nothing but validate the request, call
- * the single runAgent() entry point, and forward each LangGraph state
- * snapshot to the client as newline-delimited JSON. All actual behavior
- * lives in lib/agent -- this file has zero graph/business logic, which is
- * what keeps the harness testable independent of the web layer.
- */
+/** NDJSON stream of runAgent() state snapshots. */
 export async function POST(req: Request) {
   let body: AgentRequestBody;
   try {

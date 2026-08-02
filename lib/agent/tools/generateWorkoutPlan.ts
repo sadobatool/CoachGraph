@@ -35,9 +35,7 @@ const SPLITS: Record<2 | 3 | 4, DayTemplate[]> = {
 
 const DIFFICULTY_RANK: Record<ExperienceLevel, number> = { beginner: 0, intermediate: 1, advanced: 2 };
 
-// Below this many eligible exercises for a category on a given day, we flag
-// a guardrail warning instead of silently shipping a thin/unsafe plan.
-const MIN_EXERCISES_PER_CATEGORY = 2;
+const MIN_EXERCISES_PER_CATEGORY = 2; // warn below this per category/day
 
 function isEquipmentAvailable(exercise: ExerciseLibraryItem, clientEquipment: string[]): boolean {
   const available = new Set([...clientEquipment, "bodyweight"]);
@@ -68,16 +66,10 @@ export interface GenerateWorkoutPlanParams {
   injuries: string[];
   experienceLevel: ExperienceLevel;
   exerciseLibrary: ExerciseLibraryItem[];
-  /** When true (missed-sessions adjustment), drop one training day and one set per exercise. */
-  missedSessionsAdjustment?: boolean;
+  missedSessionsAdjustment?: boolean; // drop a day + one set per exercise
 }
 
-/**
- * Deterministic exercise selection -- filters the library by equipment and
- * injury contraindications (real array-overlap checks, no LLM judgment),
- * then assembles a weekly split. Pure and independently testable: DB
- * fetching happens in the tool wrapper below, not in here.
- */
+/** Deterministic workout assembly from the exercise library. */
 export function generateWorkoutPlan(params: GenerateWorkoutPlanParams): WorkoutPlanDraft {
   const { equipment, injuries, experienceLevel, exerciseLibrary, missedSessionsAdjustment } = params;
 
@@ -124,7 +116,7 @@ export function generateWorkoutPlan(params: GenerateWorkoutPlanParams): WorkoutP
   return { daysPerWeek, days, warnings: Array.from(new Set(warnings)) };
 }
 
-/** Bindable LangChain tool wrapper -- what the trainingAgent LLM actually calls. */
+/** LangChain tool wrapper for generateWorkoutPlan. */
 export const generateWorkoutPlanTool = tool(
   async (input) => {
     const exerciseLibrary = await getAllExercises();

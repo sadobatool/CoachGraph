@@ -6,12 +6,7 @@ import type { TaskStep } from "@/types";
 
 interface AgentPlanTrackerProps {
   taskPlan: TaskStep[];
-  /** While true, the first non-terminal step is rendered as "in progress"
-   * (spinner). This is a real reflection of stream cadence, not a fake
-   * animation: LangGraph only emits a state snapshot once a node finishes,
-   * so the step immediately after the last "done" one IS the one the graph
-   * is currently executing between this snapshot and the next. */
-  isStreaming: boolean;
+  isStreaming: boolean; // next pending step shows spinner between snapshots
 }
 
 export function AgentPlanTracker({ taskPlan, isStreaming }: AgentPlanTrackerProps) {

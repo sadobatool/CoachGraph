@@ -1,7 +1,3 @@
-// Domain types shared across the app (DB layer, agent, and frontend).
-// TS objects use camelCase; lib/supabase/queries.ts maps to/from the
-// snake_case DB columns defined in supabase/migrations/0001_init.sql.
-
 export type ActivityLevel = "sedentary" | "light" | "moderate" | "active" | "very_active";
 export type PrimaryGoal = "fat_loss" | "muscle_gain" | "maintenance" | "general_fitness";
 export type ExperienceLevel = "beginner" | "intermediate" | "advanced";
@@ -23,8 +19,7 @@ export interface ClientProfile {
   activityLevel: ActivityLevel;
   primaryGoal: PrimaryGoal;
   experienceLevel: ExperienceLevel;
-  // null = not yet asked during intake; [] = asked, client explicitly has none.
-  equipment: string[] | null;
+  equipment: string[] | null; // null = unasked; [] = none
   injuries: string[] | null;
   dietaryPreferences: string[] | null;
   onboardingStatus: OnboardingStatus;
@@ -32,9 +27,7 @@ export interface ClientProfile {
   updatedAt: string;
 }
 
-// All fields optional — this is what accumulates in clients while intake
-// is still in progress. save_client_profile upserts whatever subset of
-// these is known after each turn.
+/** Partial profile accumulated during intake. */
 export type ClientProfileDraft = Partial<Omit<ClientProfile, "id" | "createdAt" | "updatedAt">>;
 
 export interface CheckinRecord {
@@ -53,8 +46,7 @@ export interface CheckinRecord {
   createdAt: string;
 }
 
-// What the LLM extracts from a free-text check-in message, before the
-// deterministic log_checkin tool computes adherence/signals.
+/** Extracted check-in fields before log_checkin computes signals. */
 export interface CheckinInput {
   weightKg: number;
   sessionsCompleted: number;
@@ -83,7 +75,7 @@ export interface NutritionTargets {
   proteinG: number;
   carbsG: number;
   fatG: number;
-  rationale: string; // short plain-English explanation, written by nutritionAgent
+  rationale: string;
 }
 
 export interface WorkoutExercise {
@@ -95,18 +87,15 @@ export interface WorkoutExercise {
 }
 
 export interface WorkoutDay {
-  day: string; // e.g. "Day 1 - Push"
-  focus: string; // e.g. "Chest, Shoulders, Triceps"
+  day: string;
+  focus: string;
   exercises: WorkoutExercise[];
 }
 
 export interface WorkoutPlanDraft {
   daysPerWeek: number;
   days: WorkoutDay[];
-  warnings: string[]; // guardrail notes, e.g. limited leg options due to injury+equipment
-  // Plain-English explanation written by trainingAgent's LLM call, mirroring
-  // NutritionTargets.rationale. Not set by the deterministic tool itself --
-  // trainingAgentNode attaches it after the tool call returns.
+  warnings: string[];
   rationale?: string | null;
 }
 
@@ -123,8 +112,6 @@ export interface Plan {
   createdAt: string;
 }
 
-// Drives the live AgentPlanTracker UI. This is real LangGraph state, not
-// a fake loading animation -- each node flips its own step's status.
 export interface TaskStep {
   id: string;
   label: string;
@@ -138,8 +125,7 @@ export interface ChatMessage {
   content: string;
 }
 
-// The NDJSON contract between app/api/agent/route.ts and the frontend --
-// one of these per graph superstep, terminated by stream close.
+/** NDJSON event from /api/agent per graph superstep. */
 export interface AgentStreamEvent {
   flow: AgentFlow;
   taskPlan: TaskStep[];

@@ -41,9 +41,7 @@ export function ChatWindow() {
     if (stored) setEmail(stored);
   }, []);
 
-  // Greet the user based on real DB state (new vs. returning) without ever
-  // routing a synthetic message through the graph -- see app/api/agent/profile
-  // for why that matters (it would fabricate a check-in for returning clients).
+  // Greeting from profile lookup — avoid running the graph on load
   useEffect(() => {
     if (!email || bootstrapped.current) return;
     bootstrapped.current = true;
@@ -68,7 +66,7 @@ export function ChatWindow() {
                 .filter(Boolean)
                 .join("\n\n")
             : [
-                "Hi! I'm your adaptcoach.",
+                "Hi! I'm your CoachGraph coach.",
                 "I'll build a simple starter plan for you. Tell me about:",
                 [
                   "- Your goal (fat loss, muscle gain, etc.)",
@@ -184,10 +182,10 @@ export function ChatWindow() {
         </div>
         <div className="relative z-10 w-full max-w-md text-center">
           <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
-            AC
+            CG
           </div>
           <h2 className="font-display text-2xl font-semibold tracking-tight">
-            Welcome to adaptcoach
+            Welcome to CoachGraph
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">
             Enter your email to get started — we&apos;ll use it to save your profile and recognize you next time.
@@ -218,7 +216,7 @@ export function ChatWindow() {
 
       <div className="relative z-10 flex h-12 shrink-0 items-center justify-between border-b border-border/50 bg-background/70 px-4 backdrop-blur-md">
         <LinkHome />
-        <p className="text-sm font-medium text-foreground/80">adaptcoach</p>
+        <p className="text-sm font-medium text-foreground/80">CoachGraph</p>
         <span className="w-16" />
       </div>
 
@@ -260,7 +258,7 @@ export function ChatWindow() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Message adaptcoach..."
+              placeholder="Message CoachGraph..."
               disabled={isStreaming || checkingProfile}
               rows={1}
               className="max-h-[200px] min-h-[44px] flex-1 resize-none bg-transparent px-2 py-2.5 text-[15px] leading-6 outline-none placeholder:text-muted-foreground disabled:opacity-50"
@@ -278,7 +276,7 @@ export function ChatWindow() {
             </Button>
           </div>
           <p className="mt-2 text-center text-[11px] text-muted-foreground">
-            adaptcoach can make mistakes. Check important details against your plan.
+            CoachGraph can make mistakes. Check important details against your plan.
           </p>
         </form>
       </div>

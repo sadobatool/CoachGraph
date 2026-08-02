@@ -11,7 +11,7 @@ export function Header() {
             <span className="relative h-2 w-2 rounded-[2px] bg-primary shadow-[0_0_12px_hsl(var(--glow)/0.8)]" />
           </span>
           <span className="font-display text-lg font-semibold tracking-tight">
-            adapt<span className="text-primary">coach</span>
+            Coach<span className="text-primary">Graph</span>
           </span>
         </Link>
 

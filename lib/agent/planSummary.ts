@@ -1,14 +1,6 @@
 import type { NutritionTargets, Plan, WorkoutPlanDraft } from "@/types";
 
-/**
- * Shared by mergePlan (right after generating/adjusting a plan) and the
- * profile lookup route (so a returning client always sees their current
- * plan on the greeting, not just once at the moment it was generated).
- *
- * Renders as plain text with real newlines -- MessageBubble uses
- * `whitespace-pre-wrap`, so this structure (headings + "- " bullets)
- * displays as a readable list instead of one dense paragraph.
- */
+/** Plain-text plan summary for chat bubbles. */
 export function formatPlanSummary(plan: Plan): string {
   const { nutritionPlan, workoutPlan } = plan;
 
@@ -42,7 +34,7 @@ export function formatPlanSummary(plan: Plan): string {
     .join("\n\n");
 }
 
-/** Compare the numbers/exercises that matter to the client -- ignores rationale text. */
+/** Content equality ignoring rationale text. */
 export function plansHaveSameContent(
   a: { nutritionPlan: NutritionTargets; workoutPlan: WorkoutPlanDraft },
   b: { nutritionPlan: NutritionTargets; workoutPlan: WorkoutPlanDraft }
