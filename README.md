@@ -1,52 +1,80 @@
 # CoachGraph
 
-Fitness coaching agent. You chat through intake, get a workout + nutrition plan, then check in over time. The plan only changes when the numbers say so.
+Fitness coaching agent. Intake over chat → deterministic workout + nutrition plan → check-ins that only invoke LLM specialists when code detects a real signal.
 
 Demo: https://coach-graph.vercel.app/
 
 ## Problem
 
-AI coaches tend to rewrite your whole plan every time you talk to them. That gets expensive fast, and worse — the model will invent check-in numbers if you let it.
+Most AI coaches re-plan on every turn. That burns tokens and lets the model invent check-in numbers. CoachGraph separates concerns: LLMs extract and explain; TypeScript owns routing, signal detection, calorie math, and exercise selection.
 
-I wanted something tighter: take intake over chat, build a real plan from real math / a real exercise library, then gate any LLM adjustment behind code that detects plateau or missed sessions. No signal → no specialist call.
+## Tech stack
+
+- **Next.js 15** (App Router) + **React 19** + **TypeScript**
+- **LangGraph** outer control plane + **LangChain** `createReactAgent` specialist subagents
+- **OpenAI** via `@langchain/openai` (structured extraction + ReAct tool loops)
+- **Supabase** (Postgres) for clients, check-ins, append-only plan versions, seeded exercise library
+- **Zod** for structured LLM outputs
+- **Tailwind CSS** + **shadcn/ui** (Radix primitives)
 
 ## How the harness works
 
-It's a LangGraph Deep Agent-style setup, but not a free-roaming `createDeepAgent()` loop. Fitness needs hard gates. So:
-
-- Outer graph owns routing, signal checks, and merge/persist
-- Nutrition and training are separate ReAct subagents with their own tools
-- Those subagents only get invoked when intake finishes or `logCheckin` sets `needsLlmAdjustment`
-
-Flow looks like this:
+LangGraph Deep Agent pattern as a **gated control plane**, not an open-ended agent loop. The outer `StateGraph` owns routing, signal gates, and persistence; domain work is delegated to isolated ReAct subagents that are only reachable when code says so.
 
 ```
-router
-  ├─ intake  → (complete?) nutrition + training subagents → mergePlan
-  └─ checkin → signal? → relevant specialist(s) → mergePlan
-             → no signal? → short templated reply, done
+START → router
+          ├─ intake  → intakeComplete? → nutritionAgent ∥ trainingAgent → mergePlan → END
+          │                         └─ END (ask next missing field)
+          └─ checkin → needsLlmAdjustment?
+                          ├─ true  → specialistsNeeded → mergePlan → END
+                          └─ false → respondNoSignal → END
 ```
 
-Router loads the client from Supabase and picks intake vs check-in from `onboarding_status`. Intake uses gpt-4o-mini + Zod for extraction; what to ask next is decided in code (early on the model would claim it had everything and stall). Check-in extracts weight/sessions, then plain TypeScript computes adherence and plateau.
+### Control plane (`lib/agent/graph.ts`)
 
-Nutrition tool is Mifflin-St Jeor. Workout tool filters the seeded exercise library by equipment and injuries. Merge writes an append-only plan version — if only one specialist ran (e.g. missed sessions → training only), the other half carries over from the previous plan.
+- Annotated shared state (`AgentState`) with reducers: message concat, task-plan merge across parallel specialists, profile/check-in/plan drafts.
+- Conditional edges branch on `flow`, `intakeComplete`, and `checkinResult.needsLlmAdjustment`.
+- Specialist fan-out is selective: `specialistsForSignals` maps `plateau → nutrition`, `missed_sessions → training`, so a single signal does not pay for both subagents.
+- Stateless compile (`compiledGraph.compile()`): conversation history is rehydrated from the client each turn; durable state lives in Supabase. Compatible with serverless cold starts.
 
-`/api/agent` streams NDJSON snapshots of graph state, so the checklist in the UI is the real task plan, not a fake loader. No checkpointer. History comes back from the browser each turn; profile/check-ins/plans live in Supabase. Works fine on Vercel cold starts.
+### Intake (`nodes/intake.ts`)
 
-Stack: Next.js, LangGraph, OpenAI (mini for extract, gpt-4o inside specialists), Supabase, Tailwind.
+- LLM + Zod schema extracts profile fields; **which field to ask next is decided in TypeScript**, not by the model.
+- Profile upserted every turn (`save_client_profile`). When required fields are complete, both specialists are scheduled in parallel.
+
+### Check-in + signal gate (`nodes/checkin.ts`, `tools/logCheckin.ts`)
+
+- LLM extracts weight / sessions / optional subjective fields with nullable Zod fields — nulls are required so the model cannot invent numbers that false-fire detectors.
+- Deterministic TypeScript detectors for plateau and missed sessions.
+- `needsLlmAdjustment = signalsDetected.length > 0`. No signal → `respondNoSignal` (templated reply, zero specialist tokens).
+
+### Specialist subagents (`subagents.ts`)
+
+Two `createReactAgent` loops with isolated toolsets and prompts:
+
+| Subagent | Tool (required) | Forbidden |
+|---|---|---|
+| `nutrition-subagent` | `calculate_nutrition_targets` | Estimating calories/macros |
+| `training-subagent` | `generate_workout_plan` | Inventing exercises |
+
+Tool outputs become the plan; the LLM only writes the short client-facing rationale.
+
+### Merge / versioning (`nodes/mergePlan.ts`)
+
+- Append-only plan rows in Postgres.
+- Partial specialist runs carry forward the untouched half from the previous version.
+- Content-equality short-circuit skips a new version when the adjusted plan is identical.
+
+### Streaming UX (`app/api/agent`)
+
+`runAgent` yields `streamMode: "values"` snapshots. The route encodes them as **NDJSON** (`application/x-ndjson`). The chat UI’s checklist is the live `taskPlan` from graph state — not a cosmetic loader.
 
 ## What a session looks like
 
 1. New email → intake chat (goal, stats, gear, injuries). Profile saves every turn.
-2. When fields are full, both specialists run and you get a starter plan.
+2. Fields complete → both specialists run → starter plan `v1`.
 3. Later check-ins: weight + sessions completed/planned.
-4. Plateau or bad adherence → only the needed specialist rewrites. Otherwise you just get an "on track" reply.
-
-## Time / next
-
-Took about a weekend. Schema and tools first, then the outer graph, then subagents, then the chat UI.
-
-Next if I had more time: real auth, a proper plan page (not only chat text), better check-in UX, more signals (sleep/stress/deload), tighter tests on the detectors, and RLS instead of service-role-only on the server.
+4. Plateau or bad adherence → only the mapped specialist(s) rewrite. Otherwise: on-track reply, no ReAct loop.
 
 ## Setup
 
@@ -57,6 +85,7 @@ Next if I had more time: real auth, a proper plan page (not only chat text), bet
 ```
 SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
+DATABASE_URL=
 OPENAI_API_KEY=
 ```
 
@@ -71,8 +100,9 @@ Open http://localhost:3000 and hit Start coaching.
 
 ## Layout
 
-- `app/` — pages + `/api/agent`
+- `app/` — pages + `/api/agent` NDJSON stream
 - `components/chat/` — chat UI + plan tracker
-- `lib/agent/` — graph, nodes, subagents, tools
+- `components/ui/` — shadcn/ui primitives
+- `lib/agent/` — graph, nodes, subagents, tools, signal detectors
 - `lib/supabase/` — client + queries
 - `supabase/` — migration + seed
