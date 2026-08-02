@@ -1,0 +1,105 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 40% 98%;
+    --foreground: 222 47% 8%;
+
+    --card: 210 50% 99%;
+    --card-foreground: 222 47% 8%;
+
+    --primary: 168 84% 32%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 32% 94%;
+    --secondary-foreground: 222 40% 16%;
+
+    --muted: 210 28% 94%;
+    --muted-foreground: 215 18% 42%;
+
+    --accent: 186 72% 94%;
+    --accent-foreground: 186 70% 22%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 210 28% 88%;
+    --input: 210 28% 88%;
+    --ring: 168 84% 32%;
+
+    --radius: 0.875rem;
+
+    --glow: 168 90% 42%;
+    --signal: 186 92% 44%;
+    --ink: 222 47% 8%;
+    --mist: 210 45% 96%;
+    --panel: 0 0% 100% / 0.72;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    background-image:
+      radial-gradient(ellipse 80% 60% at 10% -10%, hsl(168 70% 70% / 0.22), transparent 55%),
+      radial-gradient(ellipse 70% 50% at 95% 5%, hsl(186 80% 70% / 0.18), transparent 50%),
+      radial-gradient(ellipse 50% 40% at 50% 100%, hsl(210 60% 80% / 0.25), transparent 60%);
+    background-attachment: fixed;
+  }
+
+  ::selection {
+    background: hsl(var(--primary) / 0.2);
+    color: hsl(var(--foreground));
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .glass {
+    background: hsl(var(--panel));
+    backdrop-filter: blur(18px) saturate(1.2);
+    -webkit-backdrop-filter: blur(18px) saturate(1.2);
+    border: 1px solid hsl(var(--border) / 0.85);
+    box-shadow:
+      0 1px 0 hsl(0 0% 100% / 0.7) inset,
+      0 20px 50px -30px hsl(222 47% 8% / 0.18);
+  }
+
+  .glow-ring {
+    box-shadow:
+      0 0 0 1px hsl(var(--glow) / 0.25),
+      0 0 32px -8px hsl(var(--glow) / 0.45);
+  }
+
+  .signal-grid {
+    background-image:
+      linear-gradient(hsl(210 30% 70% / 0.12) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(210 30% 70% / 0.12) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, black 20%, transparent 75%);
+  }
+
+  .text-gradient {
+    background: linear-gradient(135deg, hsl(var(--ink)) 0%, hsl(168 60% 28%) 55%, hsl(var(--signal)) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}

@@ -1,0 +1,61 @@
+-- adaptcoach exercise library seed data
+-- Deliberately includes overlapping equipment/injury combinations so the
+-- guardrail case (injury conflicts with available equipment) has real
+-- data to exercise. See README.md "Failure modes" section.
+
+insert into exercise_library
+  (name, category, target_muscles, equipment_needed, injury_contraindications, difficulty_level, default_sets, default_reps_range, cues)
+values
+  -- PUSH
+  ('Push-Up', 'push', '{chest,triceps,shoulders}', '{bodyweight}', '{wrist}', 'beginner', 3, '8-15', 'Keep core tight, elbows ~45 degrees from torso.'),
+  ('Barbell Bench Press', 'push', '{chest,triceps,shoulders}', '{barbell,bench}', '{shoulder,wrist}', 'intermediate', 4, '6-10', 'Feet planted, controlled descent to chest.'),
+  ('Incline Dumbbell Press', 'push', '{chest,shoulders,triceps}', '{dumbbells,bench}', '{shoulder}', 'intermediate', 3, '8-12', 'Bench at ~30-45 degrees.'),
+  ('Overhead Barbell Press', 'push', '{shoulders,triceps}', '{barbell}', '{shoulder,lower_back}', 'intermediate', 3, '6-10', 'Brace core, avoid excessive lower back arch.'),
+  ('Dumbbell Shoulder Press', 'push', '{shoulders,triceps}', '{dumbbells}', '{shoulder}', 'beginner', 3, '8-12', 'Seated or standing, controlled path overhead.'),
+  ('Dips', 'push', '{chest,triceps,shoulders}', '{dip_bar}', '{shoulder,wrist}', 'advanced', 3, '6-12', 'Lean slightly forward for chest emphasis.'),
+  ('Cable Tricep Pushdown', 'push', '{triceps}', '{cable_machine}', '{wrist}', 'beginner', 3, '10-15', 'Elbows pinned to sides throughout.'),
+  ('Close-Grip Push-Up', 'push', '{triceps,chest}', '{bodyweight}', '{wrist}', 'intermediate', 3, '8-12', 'Hands shoulder-width or closer.'),
+
+  -- PULL
+  ('Pull-Up', 'pull', '{back,biceps}', '{pull_up_bar}', '{shoulder}', 'advanced', 3, '4-10', 'Full hang to chin-over-bar.'),
+  ('Lat Pulldown', 'pull', '{back,biceps}', '{cable_machine}', '{shoulder}', 'beginner', 3, '8-12', 'Pull to upper chest, avoid leaning back excessively.'),
+  ('Barbell Bent-Over Row', 'pull', '{back,biceps}', '{barbell}', '{lower_back}', 'intermediate', 4, '6-10', 'Hinge at hips, flat back throughout.'),
+  ('Dumbbell Row', 'pull', '{back,biceps}', '{dumbbells,bench}', '{lower_back}', 'beginner', 3, '8-12', 'One hand/knee supported on bench.'),
+  ('Seated Cable Row', 'pull', '{back,biceps}', '{cable_machine}', '{lower_back}', 'beginner', 3, '8-12', 'Squeeze shoulder blades, avoid excessive lean-back.'),
+  ('Face Pull', 'pull', '{shoulders,back}', '{cable_machine}', '{}', 'beginner', 3, '12-15', 'Pull to face height, elbows high.'),
+  ('Dumbbell Bicep Curl', 'pull', '{biceps}', '{dumbbells}', '{}', 'beginner', 3, '10-15', 'Controlled tempo, no swinging.'),
+  ('Barbell Curl', 'pull', '{biceps}', '{barbell}', '{wrist}', 'beginner', 3, '8-12', 'Keep elbows fixed at sides.'),
+
+  -- LEGS
+  ('Bodyweight Squat', 'legs', '{quads,glutes}', '{bodyweight}', '{knee}', 'beginner', 3, '12-20', 'Knees tracking over toes, full depth if comfortable.'),
+  ('Barbell Back Squat', 'legs', '{quads,glutes,hamstrings}', '{barbell,squat_rack}', '{knee,lower_back}', 'intermediate', 4, '5-8', 'Brace core, drive through mid-foot.'),
+  ('Goblet Squat', 'legs', '{quads,glutes}', '{dumbbells}', '{knee}', 'beginner', 3, '10-15', 'Hold weight at chest, elbows inside knees at bottom.'),
+  ('Romanian Deadlift', 'legs', '{hamstrings,glutes,lower_back}', '{barbell}', '{lower_back}', 'intermediate', 3, '8-10', 'Hinge at hips, slight knee bend, bar close to legs.'),
+  ('Conventional Deadlift', 'legs', '{hamstrings,glutes,back}', '{barbell}', '{lower_back}', 'advanced', 3, '4-6', 'Neutral spine, drive through the floor.'),
+  ('Barbell Hip Thrust', 'legs', '{glutes,hamstrings}', '{barbell,bench}', '{lower_back}', 'intermediate', 4, '8-12', 'Chin tucked, full hip extension at top.'),
+  ('Glute Bridge', 'legs', '{glutes,hamstrings}', '{bodyweight}', '{}', 'beginner', 3, '12-20', 'Squeeze glutes at top, avoid overarching lower back.'),
+  ('Walking Lunge', 'legs', '{quads,glutes}', '{dumbbells}', '{knee}', 'intermediate', 3, '10-12 per leg', 'Front knee tracks over ankle, torso upright.'),
+  ('Bodyweight Lunge', 'legs', '{quads,glutes}', '{bodyweight}', '{knee}', 'beginner', 3, '10-12 per leg', 'Controlled descent, push through front heel.'),
+  ('Leg Press', 'legs', '{quads,glutes}', '{leg_press_machine}', '{knee,lower_back}', 'beginner', 3, '10-15', 'Avoid locking knees fully at top.'),
+  ('Leg Curl', 'legs', '{hamstrings}', '{leg_curl_machine}', '{}', 'beginner', 3, '10-15', 'Controlled tempo, avoid hyperextending lower back.'),
+  ('Leg Extension', 'legs', '{quads}', '{leg_extension_machine}', '{knee}', 'beginner', 3, '10-15', 'Controlled tempo, do not slam weight stack.'),
+  ('Standing Calf Raise', 'legs', '{calves}', '{bodyweight}', '{}', 'beginner', 3, '15-20', 'Full range of motion, pause at top.'),
+  ('Dumbbell Step-Up', 'legs', '{quads,glutes}', '{dumbbells,bench}', '{knee}', 'intermediate', 3, '8-10 per leg', 'Drive through the heel of the elevated foot.'),
+
+  -- CORE
+  ('Plank', 'core', '{core}', '{bodyweight}', '{wrist}', 'beginner', 3, '30-60 sec', 'Straight line from head to heels.'),
+  ('Dead Bug', 'core', '{core}', '{bodyweight}', '{}', 'beginner', 3, '10-12 per side', 'Lower back pressed into floor throughout.'),
+  ('Hanging Leg Raise', 'core', '{core}', '{pull_up_bar}', '{shoulder}', 'advanced', 3, '8-12', 'Avoid swinging, control the descent.'),
+  ('Cable Crunch', 'core', '{core}', '{cable_machine}', '{lower_back}', 'intermediate', 3, '12-15', 'Crunch from the ribs, not the hips.'),
+  ('Russian Twist', 'core', '{core}', '{bodyweight}', '{lower_back}', 'beginner', 3, '15-20 per side', 'Keep chest up, rotate from the torso.'),
+
+  -- CARDIO
+  ('Jump Rope', 'cardio', '{full_body}', '{jump_rope}', '{knee,ankle}', 'beginner', 1, '10-15 min', 'Small hops, land softly.'),
+  ('Rowing Machine', 'cardio', '{full_body}', '{rowing_machine}', '{lower_back}', 'beginner', 1, '15-20 min', 'Legs drive first, then lean back, then pull.'),
+  ('Running', 'cardio', '{full_body}', '{bodyweight}', '{knee,ankle}', 'beginner', 1, '20-30 min', 'Steady pace, land mid-foot.'),
+  ('Burpees', 'cardio', '{full_body}', '{bodyweight}', '{knee,wrist,shoulder}', 'intermediate', 3, '10-15', 'Full push-up optional, soft landing on jump.'),
+
+  -- MOBILITY
+  ('Cat-Cow Stretch', 'mobility', '{lower_back,core}', '{bodyweight}', '{}', 'beginner', 1, '8-10 reps', 'Slow, controlled spinal flexion and extension.'),
+  ('Hip Flexor Stretch', 'mobility', '{hips}', '{bodyweight}', '{knee}', 'beginner', 1, '30 sec per side', 'Back knee on a pad, gentle forward shift.'),
+  ('Thoracic Rotation', 'mobility', '{back,shoulders}', '{bodyweight}', '{}', 'beginner', 1, '8-10 per side', 'Rotate from the mid-back, hips stay square.');
